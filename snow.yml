@@ -1,0 +1,73 @@
+---
+- name: Raising and Closing Incident
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    open_ticket: true
+    close_ticket: true
+    snow_username: 'admin'
+    snow_password: 'kqS37*ahRUC+'
+    snow_instance: 'http://dev191144.service-now.com'
+
+  collections:
+    - servicenow.itsm
+    - servicenow.servicenow
+
+  tasks:
+  - name: "Open a ServiceNow Incident"
+    block:
+      - name: CREATE AN INCIDENT
+        servicenow.servicenow.snow_record:
+          username: "{{ snow_username }}"
+          password: "{{ snow_password }}"
+          instance: "{{ snow_instance }}"
+          state: present
+          table: incident
+          data:
+            short_description: "Test Incident Only"
+            severity: 3
+            priority: 2
+            caller_id: "System Administrator"
+            comments: "Some Comment....blah"
+        register: snow_var
+        delegate_to: localhost
+
+      - name: "OUTPUT OF INCIDENT NUMBER"
+        debug:
+          var: snow_var.record.number
+
+      - set_fact:
+          incident_num: "{{ snow_var.record.number }}"
+
+    when: open_ticket == true
+
+  - name: "Close a ServiceNow Incident"
+    block:
+     - name: Update ServiceNow & Mark as Resovled (State 6)
+       servicenow.servicenow.snow_record:
+         username: "{{ snow_username }}"
+         password: "{{ snow_password }}"
+         instance: "{{ snow_instance }}"
+         state: present
+         table: incident
+         number: "{{ incident_num }}"
+         data:
+           work_notes: "Stage 6 (Comment)"
+           stage: 6
+       delegate_to: localhost
+
+     - name: Update ServiceNow & Mark as Resovled (State 7)
+       servicenow.servicenow.snow_record:
+         username: "{{ snow_username }}"
+         password: "{{ snow_password }}"
+         instance: "{{ snow_instance }}"
+         state: present
+         table: incident
+         number: "{{ incident_num }}"
+         data:
+           work_notes: "Stage 7 (Comment)"
+           stage: 7
+       delegate_to: localhost
+
+    when: close_ticket == true
